@@ -79,7 +79,7 @@ float4 PsMain(PsIn const ps_in) : SV_Target {
   float3 neighborhoodMax = -10000;
   float3 m1 = float3(0, 0, 0);
   float3 m2 = float3(0, 0, 0);
-  float closestDepth = 0.0;
+  float closestDepth = DEPTH_CLEAR_VALUE;
   int2 closestDepthPixelPosition = int2(0, 0);
 
   for (int x = -1; x <= 1; x++) {
