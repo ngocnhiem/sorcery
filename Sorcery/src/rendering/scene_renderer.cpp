@@ -1272,6 +1272,11 @@ auto SceneRenderer::ExtractCurrentState() -> void {
 
       packet.submesh_data.reserve(packet.submesh_data.size() + mesh->GetSubmeshes().size());
 
+      auto const& transform{comp->GetEntity()->GetTransform()};
+      auto const local_to_world_mtx{transform.GetLocalToWorldMatrix()};
+      auto const scaling{transform.GetWorldScale()};
+      auto const max_abs_scale{std::max({std::abs(scaling[0]), std::abs(scaling[1]), std::abs(scaling[2])})};
+
       for (auto const& submesh : mesh->GetSubmeshes()) {
         auto const mtl{comp->GetMaterials()[submesh.GetMaterialIndex()]};
 
@@ -1293,16 +1298,11 @@ auto SceneRenderer::ExtractCurrentState() -> void {
         packet.submesh_data.emplace_back(static_cast<unsigned>(packet.mesh_data.size() - 1), submesh.GetFirstMeshlet(),
           submesh.GetMeshletCount(), submesh.GetBaseVertex(), mtl_buf_local_idx, submesh.GetBounds());
 
-        auto const& transform{comp->GetEntity()->GetTransform()};
-        auto const local_to_world_mtx{transform.GetLocalToWorldMatrix()};
-        auto const scaling{transform.GetWorldScale()};
-        auto const max_abs_scale{std::max({std::abs(scaling[0]), std::abs(scaling[1]), std::abs(scaling[2])})};
-
         packet.instance_data.emplace_back(static_cast<unsigned>(packet.submesh_data.size() - 1),
           local_to_world_mtx, sorcery::detail::GetPrevModelMtx(*comp), max_abs_scale);
-
-        sorcery::detail::SetPrevModelMtx(*comp, local_to_world_mtx);
       }
+
+      sorcery::detail::SetPrevModelMtx(*comp, local_to_world_mtx);
     }
   };
 
