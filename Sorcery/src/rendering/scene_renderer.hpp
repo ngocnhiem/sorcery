@@ -213,8 +213,8 @@ private:
 
     bool accum_tex_empty;
 
-    float jitter_x;
-    float jitter_y;
+    float jitter_x_ndc;
+    float jitter_y_ndc;
   };
 
 

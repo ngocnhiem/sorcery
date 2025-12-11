@@ -1916,7 +1916,7 @@ auto SceneRenderer::Render() -> void {
     };
 
     // Jitter is defined to be in NDC [-1, 1]
-    auto const [jitter_ndc_x, jitter_ndc_y]
+    auto const [jitter_x_ndc, jitter_y_ndc]
     {
       [this, transient_rt_width, transient_rt_height] {
         auto const jitter_idx{render_manager_->GetCurrentFrameCount() % taa_subpixel_sample_count_};
@@ -1942,14 +1942,14 @@ auto SceneRenderer::Render() -> void {
     };
 
     // We store this in the cam data so that we can use it in the next frame
-    cam_data.jitter_x = jitter_ndc_x;
-    cam_data.jitter_y = jitter_ndc_y;
+    cam_data.jitter_x_ndc = jitter_x_ndc;
+    cam_data.jitter_y_ndc = jitter_y_ndc;
 
     auto const cam_proj_mtx{
       TransformProjectionMatrixForRendering(Camera::CalculateProjectionMatrix(cam_data.type, cam_data.fov_vert_deg,
                                               cam_data.size_vert, viewport_aspect, cam_data.near_plane,
                                               cam_data.far_plane) * Matrix4::Translate(Vector3{
-                                              jitter_ndc_x, jitter_ndc_y, 0
+                                              jitter_x_ndc, jitter_y_ndc, 0
                                             }))
     };
     auto const prev_cam_proj_mtx{
@@ -1957,7 +1957,7 @@ auto SceneRenderer::Render() -> void {
         ? TransformProjectionMatrixForRendering(Camera::CalculateProjectionMatrix(prev_cam_it->type,
                                                   prev_cam_it->fov_vert_deg, prev_cam_it->size_vert, viewport_aspect,
                                                   prev_cam_it->near_plane, prev_cam_it->far_plane) * Matrix4::Translate(
-                                                  Vector3{prev_cam_it->jitter_x, prev_cam_it->jitter_y, 0}))
+                                                  Vector3{prev_cam_it->jitter_x_ndc, prev_cam_it->jitter_y_ndc, 0}))
         : cam_proj_mtx
     };
 
@@ -2041,16 +2041,16 @@ auto SceneRenderer::Render() -> void {
         *frame_packet.buffers[mesh.cull_data_buf_local_idx]);
       cam_cmd.SetPipelineParameter(PIPELINE_PARAM_INDEX(GBufferDrawParams, idx32), mesh.idx32);
       cam_cmd.SetPipelineParameter(PIPELINE_PARAM_INDEX(GBufferDrawParams, jitter_x),
-        *std::bit_cast<UINT const*>(&jitter_ndc_x));
+        *std::bit_cast<UINT const*>(&jitter_x_ndc));
       cam_cmd.SetPipelineParameter(PIPELINE_PARAM_INDEX(GBufferDrawParams, jitter_y),
-        *std::bit_cast<UINT const*>(&jitter_ndc_y));
+        *std::bit_cast<UINT const*>(&jitter_y_ndc));
       cam_cmd.SetPipelineParameter(PIPELINE_PARAM_INDEX(GBufferDrawParams, prev_jitter_x),
         *std::bit_cast<UINT const*>(prev_cam_it != std::ranges::end(prev_frame_packet.cam_data)
-                                      ? &prev_cam_it->jitter_x
+                                      ? &prev_cam_it->jitter_x_ndc
                                       : &zero));
       cam_cmd.SetPipelineParameter(PIPELINE_PARAM_INDEX(GBufferDrawParams, prev_jitter_y),
         *std::bit_cast<UINT const*>(prev_cam_it != std::ranges::end(prev_frame_packet.cam_data)
-                                      ? &prev_cam_it->jitter_y
+                                      ? &prev_cam_it->jitter_y_ndc
                                       : &zero));
 
       if (auto const skinned_mesh_it{
@@ -2360,9 +2360,9 @@ auto SceneRenderer::Render() -> void {
       cam_cmd.SetPipelineParameter(PIPELINE_PARAM_INDEX(TaaResolveDrawParams, linear_samp_idx),
         samp_bi_clamp_.Get());
       cam_cmd.SetPipelineParameter(PIPELINE_PARAM_INDEX(TaaResolveDrawParams, jitter_x),
-        *std::bit_cast<UINT const*>(&jitter_ndc_x));
+        *std::bit_cast<UINT const*>(&jitter_x_ndc));
       cam_cmd.SetPipelineParameter(PIPELINE_PARAM_INDEX(TaaResolveDrawParams, jitter_y),
-        *std::bit_cast<UINT const*>(&jitter_ndc_y));
+        *std::bit_cast<UINT const*>(&jitter_y_ndc));
 
       cam_cmd.ClearRenderTarget(*taa_rt->GetColorTex(), std::array{0.0f, 0.0f, 0.0f, 1.0f}, {});
       cam_cmd.DrawInstanced(3, 1, 0, 0);
